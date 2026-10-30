@@ -40,14 +40,11 @@ generate_name :: proc() -> string {
 	return result
 }
 
-rename_files :: proc(directory_path: string, prefix_intent: string) {
+rename_files :: proc(path: string, prefix_intent: string) {
 	found_item := false
 	prefix: string
-
-	if len(directory_path) == 0 {
-		fmt.println("INFO: Missing directory path flag. '-path:/home/user/Downloads'")
-		return
-	}
+	dir_path := path if len(path) > 0 else "."
+	dir_format := "/" if len(path) > 0 else ""
 
 	if len(prefix_intent) == 0 {
 		prefix = "jpg"
@@ -71,10 +68,10 @@ rename_files :: proc(directory_path: string, prefix_intent: string) {
 		}
 	}
 
-	files, err := os.read_directory_by_path(directory_path, 0, context.allocator)
+	files, err := os.read_all_directory_by_path(path if len(path) > 0 else ".", context.allocator)
 
 	if err != nil {
-		fmt.printf("ERROR: Failed to read '%s' directory.\n",directory_path)
+		fmt.printf("ERROR: Failed to read '%s' directory.\n",path if len(path) > 0 else ".")
 		return
 	}
 
@@ -86,16 +83,17 @@ rename_files :: proc(directory_path: string, prefix_intent: string) {
 
 			for i in 0 ..< 3 {
 				new_name := strings.concatenate(
-					{generate_name(), strings.concatenate({".", prefix})},
+					{path,dir_format,generate_name(), strings.concatenate({".", prefix})},
 				)
-				rename_err := os.rename(file.name, new_name)
+
+				rename_err := os.rename(strings.concatenate({path,dir_format,file.name}), new_name)
 
 				if rename_err == os.General_Error.Invalid_Path {
-					fmt.printf("WARNING: Failed to rename %s to %s\n", file.name, new_name)
+					fmt.printf("WARNING: Failed to renamed '%s%s%s' to '%s'\n",path,dir_format,file.name,new_name)
 				}
 
 				if rename_err == nil {
-					fmt.printf("INFO: Successfully renamed '%s' to '%s'\n", file.name,new_name)
+					fmt.printf("INFO: Successfully renamed '%s%s%s' to '%s'\n",path,dir_format,file.name,new_name)
 					break
 				}
 			}
